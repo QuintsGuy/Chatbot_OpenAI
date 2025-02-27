@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script defer src="chat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        #chat-container {
+            width: 400px;
+            height: 500px;
+            border: 1px solid #ccc;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        #message-input {
+            width: 80%;
+            padding: 10px;
+        }
+        #send-button {
+            padding: 10px;
+        }
+        .message {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .bot-message {
+            background: #dff0d8;
+            font-weight: bold;
+        }
+        .user-message {
+            background: #cce5ff;
+        }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        #typing-indicator {
+            font-style: italic;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+    <h2>WebSocket Chat with AI</h2>
+    <div id="chat-container"></div>
+    <p id="typing-indicator" style="display: none;">🤖 Bot is typing...</p>
+    <input type="text" id="message-input" placeholder="Type a message...">
+    <button id="send-button" onclick="sendMessage()">Send</button>
+    
+    <script>
+        const socket = io();
+        const chatContainer = document.getElementById("chat-container");
+        const messageInput = document.getElementById("message-input");
+        const typingIndicator = document.getElementById("typing-indicator");
+
+        socket.on("chat message", (msg) => {
+            typingIndicator.style.display = "none";
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message");
+            
+            const avatar = document.createElement("img");
+            avatar.classList.add("avatar");
+
+            if (msg.startsWith("🤖 Bot:")) {
+                messageDiv.classList.add("bot-message");
+                avatar.src = "https://via.placeholder.com/30/0f0/fff?text=B"; // Bot avatar
+            } else {
+                messageDiv.classList.add("user-message");
+                avatar.src = "https://via.placeholder.com/30/00f/fff?text=U"; // User avatar
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(document.createTextNode(msg));
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        });
+
+        socket.on("bot typing", () => {
+            typingIndicator.style.display = "block";
+        });
+
+        function sendMessage() {
+            const msg = messageInput.value.trim();
+            if (!msg) return;
+
+            socket.emit("chat message", msg);
+            
+            if (msg.toLowerCase().startsWith("@bot")) {
+                socket.emit("bot typing");
+            }
+
+            // Disable send button for 2 seconds to prevent spamming
+            document.getElementById("send-button").disabled = true;
+            setTimeout(() => {
+                document.getElementById("send-button").disabled = false;
+            }, 2000);
+
+            messageInput.value = "";
+        }
+    </script>
+</body>
+</html>
